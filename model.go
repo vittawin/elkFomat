@@ -8,6 +8,7 @@ import (
 
 type MyModel struct {
 	list     list.Model
+	logData  string
 	secModel SecModel
 	err      error
 }
@@ -36,6 +37,7 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.list.SetItems(dataLogList)
 		case "enter":
 			m.SetLog()
+			return m, tea.Println(m.logData)
 		}
 	}
 	var cmd tea.Cmd
@@ -59,11 +61,12 @@ func (m *MyModel) View() string {
 func (m *MyModel) SetLog() {
 	selectedItem := m.list.SelectedItem()
 	selectedLog := selectedItem.(Log)
-	//newDesc, err := parseLogBody(selectedLog.data)
-	//if err != nil {
-	//	panic(err)
-	//}
+	logsData, err := parseLogBody(selectedLog.data)
+	if err != nil {
+		panic(err)
+	}
 
 	selectedLog.description = "aaaaaaaaaaa\n" + "wwwwwww"
-	m.secModel.list.SetItems([]list.Item{selectedLog})
+	m.list.SetItems([]list.Item{selectedLog})
+	m.logData = logsData
 }

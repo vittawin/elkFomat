@@ -4,8 +4,21 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"github.com/charmbracelet/bubbles/list"
 	"os"
 )
+
+const (
+	rqHeader = "rq_header"
+	kafka    = "KAFKA"
+	rest     = "REST"
+	event    = "EVENT"
+)
+
+var data []string
+var rows = make(map[string][]LogStruct) //keys is jobId of log
+var keys = make([]string, 0)
+var dataLogList []list.Item
 
 func setInput() {
 	file, err := getInput()
@@ -77,5 +90,29 @@ func parseLogBody(row string) (string, error) {
 		fmt.Println("cannot unmarshal :", err)
 	}
 
-	return log.Body, nil
+	result := log.JobID + "\n" +
+		parseDataToString(log) + "\n" +
+		"module : " + log.Module + " | " + log.Type + "\n" +
+		"body : " + parseJsonBody(log.Body) + "\n"
+	return result, nil
+}
+
+func parseDataToString(row LogStruct) string {
+	switch row.EntryModule {
+	case kafka:
+		//fmt.Print(darkGray, comfortYellow)
+		return row.ServiceName + " | " + row.EntryModule + "| " + row.Topic + " : " + row.Path
+	case rest:
+		//fmt.Print(darkGray, comfortBlue)
+		if row.OriginalPath == "" {
+			row.OriginalPath = row.EventName
+		}
+		return row.ServiceName + " | " + row.EntryModule + "| " + row.Method + " : " + row.OriginalPath
+	case event:
+		//fmt.Print(darkGray+ comfortGreen)
+		return row.ServiceName + " | " + row.EntryModule + "| " + row.Path + " : " + row.ToPath
+	default:
+		//fmt.Print(darkGray+ comfortOrange)
+		return row.ServiceName + " | " + row.EntryModule + "| " + row.Topic + " : " + row.Path
+	}
 }
