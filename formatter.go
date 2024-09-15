@@ -90,8 +90,7 @@ func parseLogBody(row string) (string, error) {
 		fmt.Println("cannot unmarshal :", err)
 	}
 
-	result := log.JobID + "\n" +
-		parseDataToString(log) + "\n" +
+	result := parseDataToString(log) + "\n" +
 		"module : " + log.Module + " | " + log.Type + "\n" +
 		"body : " + parseJsonBody(log.Body) + "\n"
 	return result, nil
