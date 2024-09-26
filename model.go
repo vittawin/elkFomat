@@ -22,6 +22,7 @@ type MyModel struct {
 	secModel SecModel
 	err      error
 	loaded   bool //use this for wait until it finish all setting items -> remove this will error
+	list.Model
 }
 
 func (m *MyModel) Init() tea.Cmd {
@@ -42,6 +43,7 @@ func (m *MyModel) initList(w int) {
 	m.lists[0].SetItems(dataLogList)
 
 	m.lists[1].Title = "log Data"
+	m.setDefaultLogData()
 }
 
 func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -56,8 +58,10 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "g":
 			m.lists[m.focused].SetItems(dataLogList)
 			m.lists[1].SetItems([]list.Item{})
-		case "enter":
-			m.SetLog()
+		case "j", "down":
+			m.SetLog(true)
+		case "k", "up":
+			m.SetLog(false)
 		}
 	}
 	var cmd tea.Cmd
@@ -77,21 +81,35 @@ func (m *MyModel) View() string {
 				columnStyle.Render(logDataView),
 			)
 		}
-
 	} else {
 		return "loading..."
 	}
 }
 
-func (m *MyModel) SetLog() {
-	selectedItem := m.lists[0].SelectedItem()
+func (m *MyModel) setDefaultLogData() {
+	firstDataLog := dataLogList[0].(Log)
+	logsData, err := parseLogBody(firstDataLog.data)
+	if err != nil {
+		panic(err)
+	}
+	m.lists[1].SetItems([]list.Item{
+		Log{
+			jobId:       firstDataLog.jobId,
+			title:       firstDataLog.jobId,
+			description: logsData,
+		},
+	})
+}
+
+func (m *MyModel) SetLog(isDown bool) {
+	selectedItem := m.SelectedItem(isDown)
 	selectedLog := selectedItem.(Log)
 	logsData, err := parseLogBody(selectedLog.data)
 	if err != nil {
 		panic(err)
 	}
 
-	m.lists[0].SetItems(filterLog(selectedLog.jobId))
+	//m.lists[0].SetItems(filterLog(selectedLog.jobId))
 	m.logData = logsData
 
 	m.lists[1].SetItems([]list.Item{Log{
@@ -101,6 +119,28 @@ func (m *MyModel) SetLog() {
 	}})
 }
 
+func (m *MyModel) SelectedItem(isDown bool) list.Item {
+	i := m.lists[0].Index()
+
+	items := m.lists[0].VisibleItems()
+	itemsAmount := len(items)
+	if i < 0 || len(items) == 0 || len(items) <= i {
+		return nil
+	}
+
+	if isDown {
+		i++
+		if i >= itemsAmount {
+			return items[i-1]
+		}
+	} else {
+		i--
+		if i < 0 {
+			return items[0]
+		}
+	}
+	return items[i]
+}
 func filterLog(jobId string) []list.Item {
 	var filteredLogs []list.Item
 	for _, log := range dataLogList {
