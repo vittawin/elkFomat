@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/charmbracelet/bubbles/list"
 	"os"
+	"time"
 )
 
 const (
@@ -55,7 +56,7 @@ func addRows(logRow LogStruct, rawRow string) {
 		jobId:       parsedRow.JobID,
 		data:        rawRow,
 		title:       parsedRow.ServiceName,
-		description: parsedRow.ServiceName + " : " + parsedRow.EntryModule,
+		description: parseDataToString(parsedRow),
 	})
 
 	rows[parsedRow.JobID] = append(rows[parsedRow.JobID], parsedRow)
@@ -91,7 +92,6 @@ func parseLogBody(row string) (string, error) {
 	}
 
 	result := parseDataToString(log) + "\n" +
-		"module : " + log.Module + " | " + log.Type + "\n" +
 		"body : " + parseJsonBody(log.Body) + "\n"
 	return result, nil
 }
@@ -99,19 +99,48 @@ func parseLogBody(row string) (string, error) {
 func parseDataToString(row LogStruct) string {
 	switch row.EntryModule {
 	case kafka:
-		//fmt.Print(darkGray, comfortYellow)
-		return row.ServiceName + " | " + row.EntryModule + "| " + row.Topic + " : " + row.Path
+		return "Time : " + formatTimeToString(row.Timestamp) + "\n" +
+			"Module : " + row.Module + " | " + row.Type + "\n" +
+			row.ServiceName + " | " + row.EntryModule + "\n" +
+			row.Topic + " : " + row.Path + "\n"
 	case rest:
-		//fmt.Print(darkGray, comfortBlue)
 		if row.OriginalPath == "" {
 			row.OriginalPath = row.EventName
 		}
-		return row.ServiceName + " | " + row.EntryModule + "| " + row.Method + " : " + row.OriginalPath
+		return "Time : " + formatTimeToString(row.Timestamp) + "\n" +
+			"Module : " + row.Module + " | " + row.Type + "\n" +
+			restFormat(row) +
+			row.ServiceName + " | " + row.EntryModule + "\n" +
+			row.Method + " : " + restPath(row) + "\n"
 	case event:
-		//fmt.Print(darkGray+ comfortGreen)
-		return row.ServiceName + " | " + row.EntryModule + "| " + row.Path + " : " + row.ToPath
+		return "Time : " + formatTimeToString(row.Timestamp) + "\n" +
+			"Module : " + row.Module + " | " + row.Type + "\n" +
+			row.ServiceName + " | " + row.EntryModule + "\n" +
+			row.Path + " : " + row.ToPath + "\n"
 	default:
-		//fmt.Print(darkGray+ comfortOrange)
-		return row.ServiceName + " | " + row.EntryModule + "| " + row.Topic + " : " + row.Path
+		return "Time : " + formatTimeToString(row.Timestamp) + "\n" +
+			"Module : " + row.Module + " | " + row.Type + "\n" +
+			row.ServiceName + " | " + row.EntryModule + "\n" +
+			row.Topic + " : " + row.Path + "\n"
 	}
+}
+
+func formatTimeToString(data time.Time) string {
+	date := data.Format("2006-01-02")
+	timeStamp := data.Format("2006-01-02 15:04:05.000")
+	return date + " " + timeStamp
+}
+
+func restFormat(row LogStruct) string {
+	if row.Module == "client" {
+		return "ToPath : " + row.ToPath + "\n"
+	}
+	return ""
+}
+
+func restPath(row LogStruct) string {
+	if row.OriginalPath != "" {
+		return row.OriginalPath
+	}
+	return row.Path
 }

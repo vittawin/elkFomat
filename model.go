@@ -9,8 +9,8 @@ import (
 type status int
 
 var (
-	columnStyle  = lipgloss.NewStyle().Padding(1, 2, 0, 5)
-	focusedStyle = lipgloss.NewStyle().Padding(1, 2).
+	columnStyle  = lipgloss.NewStyle().Padding(0, 2, 0, 2)
+	focusedStyle = lipgloss.NewStyle().Padding(0, 2, 0, 0).
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62"))
 )
@@ -29,13 +29,15 @@ func (m *MyModel) Init() tea.Cmd {
 	return nil
 }
 
-func (m *MyModel) initList(w int) {
+func (m *MyModel) initList(h, w int) {
 	defaultDelegate := list.NewDefaultDelegate()
-	defaultList := list.New([]list.Item{}, defaultDelegate, w, 50)
+	logListDelegate := defaultDelegate
+	logListDelegate.SetHeight(6)
+	defaultList := list.New([]list.Item{}, logListDelegate, w/2, h*3/4)
 
 	logDataDelegate := defaultDelegate
-	logDataDelegate.SetHeight(50)
-	logDataList := list.New([]list.Item{}, logDataDelegate, w, 50)
+	logDataDelegate.SetHeight(100)
+	logDataList := list.New([]list.Item{}, logDataDelegate, w/2, h)
 	logDataList.SetShowHelp(false)
 
 	m.lists = []list.Model{defaultList, logDataList}
@@ -50,7 +52,7 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		if !m.loaded {
-			m.initList(msg.Width)
+			m.initList(msg.Height, msg.Width)
 			m.loaded = true
 		}
 	case tea.KeyMsg:
