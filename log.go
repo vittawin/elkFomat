@@ -36,3 +36,10 @@ type LogStruct struct {
 	Host         string    `json:"host"`
 	Limit        int       `json:"limit"`
 }
+
+type ErrorStruct struct {
+	ErrorCode   string `json:"error_code"`
+	ErrorType   string `json:"error_type"`
+	ErrorDesc   string `json:"error_desc"`
+	ErrorDetail string `json:"error_detail"`
+}

@@ -9,19 +9,18 @@ import (
 type status int
 
 var (
-	columnStyle  = lipgloss.NewStyle().Padding(0, 2, 0, 2)
+	columnStyle  = lipgloss.NewStyle().Padding(0, 2, 0, 2).Foreground(lipgloss.Color("241"))
 	focusedStyle = lipgloss.NewStyle().Padding(0, 2, 0, 0).
-			Border(lipgloss.RoundedBorder()).
-			BorderForeground(lipgloss.Color("62"))
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("62"))
 )
 
 type MyModel struct {
-	focused  status
-	lists    []list.Model
-	logData  string
-	secModel SecModel
-	err      error
-	loaded   bool //use this for wait until it finish all setting items -> remove this will error
+	focused status
+	lists   []list.Model
+	logData string
+	err     error
+	loaded  bool //use this for wait until it finish all setting items -> remove this will error
 	list.Model
 }
 
@@ -89,11 +88,16 @@ func (m *MyModel) View() string {
 }
 
 func (m *MyModel) setDefaultLogData() {
+	if len(dataLogList) == 0 {
+		return
+	}
+
 	firstDataLog := dataLogList[0].(Log)
 	logsData, err := parseLogBody(firstDataLog.data)
 	if err != nil {
 		panic(err)
 	}
+
 	m.lists[1].SetItems([]list.Item{
 		Log{
 			jobId:       firstDataLog.jobId,
@@ -111,7 +115,6 @@ func (m *MyModel) SetLog(isDown bool) {
 		panic(err)
 	}
 
-	//m.lists[0].SetItems(filterLog(selectedLog.jobId))
 	m.logData = logsData
 
 	m.lists[1].SetItems([]list.Item{Log{
@@ -143,6 +146,7 @@ func (m *MyModel) SelectedItem(isDown bool) list.Item {
 	}
 	return items[i]
 }
+
 func filterLog(jobId string) []list.Item {
 	var filteredLogs []list.Item
 	for _, log := range dataLogList {
