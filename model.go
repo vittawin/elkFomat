@@ -11,8 +11,8 @@ type status int
 var (
 	columnStyle  = lipgloss.NewStyle().Padding(0, 2, 0, 2).Foreground(lipgloss.Color("241"))
 	focusedStyle = lipgloss.NewStyle().Padding(0, 2, 0, 0).
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("62"))
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(lipgloss.Color("62"))
 )
 
 type MyModel struct {
@@ -145,14 +145,4 @@ func (m *MyModel) SelectedItem(isDown bool) list.Item {
 		}
 	}
 	return items[i]
-}
-
-func filterLog(jobId string) []list.Item {
-	var filteredLogs []list.Item
-	for _, log := range dataLogList {
-		if log.(Log).jobId == jobId {
-			filteredLogs = append(filteredLogs, log)
-		}
-	}
-	return filteredLogs
 }

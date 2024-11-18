@@ -1,6 +1,9 @@
-package main
+package logUtil
 
-import "time"
+import (
+	"elkFormatter/util"
+	"time"
+)
 
 type LogStruct struct {
 	Timestamp    time.Time `json:"timestamp"`
@@ -29,7 +32,7 @@ type LogStruct struct {
 	Service      string    `json:"requested-service"`
 	Protocol     string    `json:"protocol"`
 	EntryModule  string    `json:"entryModule"`
-	ErrorMessage any       `json:"errorMessage"`
+	ErrorMessage string    `json:"errorMessage"`
 	EventName    string    `json:"name"`
 	PodName      string    `json:"pod_name"`
 	HostName     string    `json:"host_name"`
@@ -42,4 +45,14 @@ type ErrorStruct struct {
 	ErrorType   string `json:"error_type"`
 	ErrorDesc   string `json:"error_desc"`
 	ErrorDetail string `json:"error_detail"`
+}
+
+func ParseRowData(row LogStruct) LogStruct {
+	row.Body = util.ParseJsonBody(row.Body)
+
+	if row.JobID == "" {
+		//row.JobID = findJobId(row.Body)
+	}
+
+	return row
 }
