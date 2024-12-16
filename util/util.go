@@ -1,11 +1,13 @@
 package util
 
 import (
+	"elkFormatter/constant"
 	"encoding/json"
+	"strings"
 	"time"
 )
 
-func ParseJsonBody(bodyJson string) string {
+func ParseJsonBody(bodyJson string, hasError bool) string {
 	result := make(map[string]interface{})
 	err := json.Unmarshal([]byte(bodyJson), &result)
 	if err != nil {
@@ -15,7 +17,15 @@ func ParseJsonBody(bodyJson string) string {
 	delete(result, "rq_header")
 
 	indentBody, _ := json.MarshalIndent(result, "", "    ")
-	return string(indentBody)
+	lines := strings.Split(string(indentBody), "\n")
+
+	if hasError {
+		for i := range lines {
+			lines[i] = constant.Red + lines[i] + constant.Reset
+		}
+	}
+
+	return strings.Join(lines, "\n")
 }
 
 func FormatTimeToString(data time.Time) string {

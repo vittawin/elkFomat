@@ -48,7 +48,7 @@ type ErrorStruct struct {
 }
 
 func ParseRowData(row LogStruct) LogStruct {
-	row.Body = util.ParseJsonBody(row.Body)
+	row.Body = util.ParseJsonBody(row.Body, false)
 
 	if row.JobID == "" {
 		//row.JobID = findJobId(row.Body)

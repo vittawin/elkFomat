@@ -73,11 +73,20 @@ func parseDataToString(row logUtil.LogStruct) string {
 }
 
 func parseLogBody(row string) (string, error) {
+	var hasError bool
 	log := logUtil.LogStruct{}
 	if err := json.Unmarshal([]byte(row), &log); err != nil {
 	}
 
-	result := parseDataToString(log) + "\n" +
-		"body : " + util.ParseJsonBody(log.Body) + "\n"
-	return result, nil
+	if log.ErrorMessage != "" {
+		hasError = true
+	}
+
+	logStr := parseDataToString(log) + "\n"
+	body := "body : " + util.ParseJsonBody(log.Body, hasError) + "\n"
+
+	if hasError {
+		return logStr + constant.Red + body + constant.Reset, nil
+	}
+	return logStr + body, nil
 }
