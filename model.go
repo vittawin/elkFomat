@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/charmbracelet/bubbles/list"
+	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
@@ -16,11 +17,12 @@ var (
 )
 
 type MyModel struct {
-	focused status
-	lists   []list.Model
-	logData string
-	err     error
-	loaded  bool //use this for wait until it finish all setting items -> remove this will error
+	focused  status
+	lists    []list.Model
+	logData  string
+	err      error
+	loaded   bool
+	viewport viewport.Model // Viewport for long log data
 	list.Model
 }
 
@@ -34,17 +36,12 @@ func (m *MyModel) initList(h, w int) {
 	logListDelegate.SetHeight(6)
 	defaultList := list.New([]list.Item{}, logListDelegate, w/2, h*3/4)
 
-	logDataDelegate := defaultDelegate
-	logDataDelegate.SetHeight(100)
-	logDataList := list.New([]list.Item{}, logDataDelegate, w/2, h)
-	logDataList.SetShowHelp(false)
+	m.viewport = viewport.New(w/2, h)                        // Viewport size
+	m.viewport.SetContent("Select a log to view details...") // Default content
 
-	m.lists = []list.Model{defaultList, logDataList}
+	m.lists = []list.Model{defaultList}
 	m.lists[0].Title = "Elk logs List"
 	m.lists[0].SetItems(dataLogList)
-
-	m.lists[1].Title = "log Data"
-	m.setDefaultLogData()
 }
 
 func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -57,14 +54,18 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "g":
-			m.lists[m.focused].SetItems(dataLogList)
-			m.lists[1].SetItems([]list.Item{})
+			m.lists[0].SetItems(dataLogList)
 		case "j", "down":
 			m.SetLog(true)
 		case "k", "up":
 			m.SetLog(false)
+		case "ctrl+d":
+			m.viewport.LineDown(5) // Scroll down
+		case "ctrl+u":
+			m.viewport.LineUp(5) // Scroll up
 		}
 	}
+
 	var cmd tea.Cmd
 	m.lists[m.focused], cmd = m.lists[m.focused].Update(msg)
 	return m, cmd
@@ -73,15 +74,13 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MyModel) View() string {
 	if m.loaded {
 		logListView := m.lists[0].View()
-		logDataView := m.lists[1].View()
-		switch m.focused {
-		default:
-			return lipgloss.JoinHorizontal(
-				lipgloss.Left,
-				focusedStyle.Render(logListView),
-				columnStyle.Render(logDataView),
-			)
-		}
+		logDataView := m.viewport.View() // Render the viewport
+
+		return lipgloss.JoinHorizontal(
+			lipgloss.Left,
+			focusedStyle.Render(logListView),
+			columnStyle.Render(logDataView),
+		)
 	} else {
 		return "loading..."
 	}
@@ -110,18 +109,14 @@ func (m *MyModel) setDefaultLogData() {
 func (m *MyModel) SetLog(isDown bool) {
 	selectedItem := m.SelectedItem(isDown)
 	selectedLog := selectedItem.(Log)
+
 	logsData, err := parseLogBody(selectedLog.data)
 	if err != nil {
 		panic(err)
 	}
 
 	m.logData = logsData
-
-	m.lists[1].SetItems([]list.Item{Log{
-		jobId:       selectedLog.jobId,
-		title:       selectedLog.jobId,
-		description: logsData,
-	}})
+	m.viewport.SetContent(logsData) // Update viewport content
 }
 
 func (m *MyModel) SelectedItem(isDown bool) list.Item {
