@@ -11,7 +11,7 @@ type status int
 
 var (
 	columnStyle  = lipgloss.NewStyle().Padding(0, 2, 0, 2).Foreground(lipgloss.Color("241"))
-	focusedStyle = lipgloss.NewStyle().Padding(0, 2, 0, 0).
+	focusedStyle = lipgloss.NewStyle().Padding(1, 2, 0, 0).
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("62"))
 )
@@ -33,11 +33,10 @@ func (m *MyModel) Init() tea.Cmd {
 func (m *MyModel) initList(h, w int) {
 	defaultDelegate := list.NewDefaultDelegate()
 	logListDelegate := defaultDelegate
-	logListDelegate.SetHeight(6)
-	defaultList := list.New([]list.Item{}, logListDelegate, w/2, h*3/4)
-
-	m.viewport = viewport.New(w/2, h)                        // Viewport size
-	m.viewport.SetContent("Select a log to view details...") // Default content
+	logListDelegate.SetHeight(5)
+	defaultList := list.New([]list.Item{}, logListDelegate, w/3, h*9/10)
+	m.viewport = viewport.New(w/2, h-2)          // Viewport size
+	m.viewport.SetContent(m.getDefaultLogData()) // Default content
 
 	m.lists = []list.Model{defaultList}
 	m.lists[0].Title = "Elk logs List"
@@ -74,7 +73,19 @@ func (m *MyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *MyModel) View() string {
 	if m.loaded {
 		logListView := m.lists[0].View()
-		logDataView := m.viewport.View() // Render the viewport
+
+		// Create a style for the viewport content
+		viewPortStyle := lipgloss.NewStyle().
+			Padding(0, 2, 0, 2). // Padding: top (0), right (2), bottom (0), left (2)
+			Foreground(lipgloss.Color("245"))
+		//Background(lipgloss.Color("236"))
+
+		// Add manual top padding by inserting blank lines
+		topPadding := "\n\n" // Add 2 lines of padding
+		paddedContent := topPadding + m.viewport.View()
+
+		// Apply the style to the padded content
+		logDataView := viewPortStyle.Render(paddedContent)
 
 		return lipgloss.JoinHorizontal(
 			lipgloss.Left,
@@ -86,9 +97,9 @@ func (m *MyModel) View() string {
 	}
 }
 
-func (m *MyModel) setDefaultLogData() {
+func (m *MyModel) getDefaultLogData() string {
 	if len(dataLogList) == 0 {
-		return
+		return ""
 	}
 
 	firstDataLog := dataLogList[0].(Log)
@@ -97,17 +108,22 @@ func (m *MyModel) setDefaultLogData() {
 		panic(err)
 	}
 
-	m.lists[1].SetItems([]list.Item{
-		Log{
-			jobId:       firstDataLog.jobId,
-			title:       firstDataLog.jobId,
-			description: logsData,
-		},
-	})
+	return logsData
+	//m.lists[1].SetItems([]list.Item{
+	//	Log{
+	//		jobId:       firstDataLog.jobId,
+	//		title:       firstDataLog.jobId,
+	//		description: logsData,
+	//	},
+	//})
 }
 
 func (m *MyModel) SetLog(isDown bool) {
 	selectedItem := m.SelectedItem(isDown)
+	if selectedItem == nil {
+		return
+	}
+
 	selectedLog := selectedItem.(Log)
 
 	logsData, err := parseLogBody(selectedLog.data)
@@ -117,6 +133,8 @@ func (m *MyModel) SetLog(isDown bool) {
 
 	m.logData = logsData
 	m.viewport.SetContent(logsData) // Update viewport content
+
+	m.viewport.GotoTop() // force viewport to start from top
 }
 
 func (m *MyModel) SelectedItem(isDown bool) list.Item {

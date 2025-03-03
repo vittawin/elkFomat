@@ -1,5 +1,2 @@
-
-
-
 build :
 	go build -o elkFormat .
